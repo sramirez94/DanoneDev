@@ -104,7 +104,6 @@ public class AddressSearchController {
                     throw new AuraHandledException('Error al guardar la dirección '+ex.getMessage());
                     
                 }
-                
 
                 return d;
             }else{
