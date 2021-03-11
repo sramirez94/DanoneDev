@@ -25,7 +25,8 @@ public class AddressSearchController {
         system.debug('saveAddressDetailsbyId method');
         system.debug('addDetails ' + addDetails);
         system.debug('id '+ id);
-
+        /*Decimal decLatitud = addDetails.ubicacion__Latitude__s;
+        Decimal decLongitud = addDetails.ubicacion__Longitude__s;*/
         Direccion__c d = new Direccion__c();
         d.Cuenta__c = id;
         d.Ciudad__c = addDetails.Ciudad__c;
@@ -43,7 +44,6 @@ public class AddressSearchController {
         d.ubicacion__Latitude__s = addDetails.ubicacion__Latitude__s;
         d.ubicacion__Longitude__s = addDetails.ubicacion__Longitude__s;
         System.debug('Direccion Save: ' + addDetails);
-        
         Http http = new Http();
         HttpRequest request = new HttpRequest();
         request.setEndpoint(Label.Endpoint_By_Address);
@@ -97,7 +97,10 @@ public class AddressSearchController {
                     }
                 }
                 if(d.Pais__c == 'Mexico') d.Pais__c='MXN';
-                if(d.estadoProvincia__c == 'Ciudad de México') d.estadoProvincia__c = 'Ciudad de Mexico';
+                /*if(d.estadoProvincia__c == 'Ciudad de México') d.estadoProvincia__c = 'Ciudad de Mexico';
+                    if(ObtieneFrecuencias(d.Ubicacion__latitude__s, d.ubicacion__Longitude__s))
+                        system.debug('Obtuvo latitud y longitud');
+                    else System.debug('no pudo obtenerlo');*/
                 insert d;
                 } catch (Exception ex) {
                     System.debug('Error al guardar la dirección '+ex.getMessage()+' '+ex.getLineNumber());
@@ -279,6 +282,48 @@ public class AddressSearchController {
         try {update direccion;} catch (Exception ex){throw new AuraHandledException(ex.getMessage());}
         
         return direccion.Id;
+    }
+    @auraEnabled
+    public static String ObtieneFrecuencias(Decimal strLatitud, Decimal strLongitud){
+        //Boolean result = false;
+        try{
+            System.debug('latitud: ' + strLatitud);
+            System.debug('longitud: ' + strLongitud);
+            HttpRequest request = new HttpRequest();
+            Http http = new Http();
+            request.setEndpoint(Label.Endpoint_By_GPS);
+            request.setMethod('POST');
+            request.setHeader('Content-Type', 'application/json');
+            request.setHeader('client_secret', Label.Client_Secret);
+            request.setHeader('client_id', Label.Client_Id);
+            
+            JSONGenerator gen=JSON.createGenerator(true);
+            gen.writeStartObject();      
+            gen.writeStringField('latitude', String.valueOf(strLatitud));
+            gen.writeStringField('longitude', String.valueOf(strLongitud));
+            //gen.writeStringField('chanel', String.valueOf(d.Canal__c));
+            gen.writeEndObject();    
+            String jsonS = gen.getAsString();
+            
+            System.debug('json:' + jsonS);
+            
+            request.setBody(jsonS);
+            
+            HttpResponse response = http.send(request);
+            
+            if (response.getStatusCode() != 200) {
+                result = false;
+                throw new AuraHandledException('Error al obtener los datos de cobertura ' + response.getStatusCode() + ' ' + response.getStatus());
+            } else {
+                JSON2Apex m = JSON2Apex.parse(response.getBody());
+                System.debug('respuesta frec: ' + m);
+                result = true;
+            }
+            return result;
+        }catch (Exception ex){
+            System.debug('ObtieneFrecuencias: ' +ex.getMessage()+' '+ex.getLineNumber());
+            return false;
+        }
     }
     public class fromJSON{
         public cls_error_list[] error_list;
