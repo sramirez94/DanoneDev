@@ -22,6 +22,8 @@
     <aura:attribute name="isCalledFromOrder" type="Boolean" default="false"/>
     <aura:attribute name="showModal" type="Boolean" default="false"/>
     <aura:attribute name="errorMesage" type="string"/>
+    <aura:attribute name="responseData" type="Object"/>
+    <aura:attribute name="direccionActualizable" type="Direccion__c"/>
     <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
     <aura:registerEvent name="Close_Modal_Address" type="c:Close_Modal_Address"/>
     <aura:registerEvent name="send_Addres_Details" type="c:Send_Address_Details_Event"/>
