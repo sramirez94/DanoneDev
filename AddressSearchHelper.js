@@ -42,16 +42,9 @@
                         // fire the event  
                         compEvent.fire();
                     }else{
-                        $A.get('e.force:refreshView').fire();
-                        var navEvt = $A.get("e.force:navigateToSObject");
-                        navEvt.setParams({
-                            "recordId": respuesta.Id,
-                            "slideDevName": "detail",
-                            "isredirect" :true
-                        });
-                        navEvt.fire();
+                        
                     }
-                    
+                    this.getAddressByGPS(component,event,respuesta.Id);
                 }else if (state === "INCOMPLETE") {
                     // do something
                 }
@@ -251,7 +244,116 @@
         });
         $A.enqueueAction(action);
     },
-    
+    getAddressByGPS : function(component, event, DireccionId){
+        console.log('getAddressByGPS');
+        component.set("v.showSpinner",true);
+        var direccion = component.get("v.direccionActualizable");
+        var action = component.get("c.ObtieneFrecuencias");
+        console.log('asignó dirección y action');
+        console.log('id dirección: ' + DireccionId);
+        action.setParams({ idDireccion : DireccionId });
+        var isCalledFromOrder = component.get("v.isCalledFromOrder");
+        console.log('asigna parámetros');
+        action.setCallback(this, function(response){
+            console.log('ejecutó');
+            var state = response.getState();
+            console.log('estado: ' + state);
+            if (state === "SUCCESS"){
+                var obj = response.getReturnValue();
+                console.log(obj);
+                if(obj){
+                    component.set("v.responseData",obj);
+                    if(obj.coverage){
+                        if(obj.coverage.coverage === 'true'){
+                            if(obj.customer_delivery_data){
+                                var item = obj.customer_delivery_data.find(item => item.delivery_type == value);
+                                var direccion = component.get("v.direccionActualizable");
+                                direccion.Cobertura__c = true;
+                                direccion.tipoCobertura__c = item.coverage_type;
+                                direccion.codigoZona__c = item.zone_code;
+                                direccion.codigoDistribuidora__c = item.distributor_code;
+                                direccion.codigoRuta__c = item.route_code;
+                                direccion.tipoEntrega__c = item.delivery_type;
+                                if(item.frequency){
+                                    if(item.frequency.delivery_monday == "1"){
+                                        direccion.Lunes__c = true;
+                                    }
+                                    if(item.frequency.delivery_tuesday == "1"){
+                                        direccion.Martes__c = true;
+                                    }
+                                    if(item.frequency.delivery_wednesday == "1"){
+                                        direccion.Miercoles__c = true;
+                                    }
+                                    if(item.frequency.delivery_thursday == "1"){
+                                        direccion.Jueves__c = true;
+                                    }
+                                    if(item.frequency.delivery_friday == "1"){
+                                        direccion.Viernes__c = true;
+                                    }
+                                    if(item.frequency.delivery_saturday == "1"){
+                                        direccion.Sabado__c = true;
+                                    }
+                                    component.set("v.direccionActualizable",direccion);
+                                    component.set("v.isActive",false);
+                                    var action2 = component.get("c.saveAddressRecord");
+                                    action2.setParams({direccion : direccion});
+                                    action2.setCallback(this, function(response){
+                                        var state2 = response.getState();
+                                        if(state === 'SUCCESS'){
+                                            console.log('exitoso');
+                                        } else if (state === "ERROR"){
+                                            var errors = response.getError();
+                                            if (errors) {
+                                                if (errors[0] && errors[0].message) {
+                                                    console.log("Error message: " +
+                                                    errors[0].message);
+                                                } else {
+                                                    console.log("Unknown error");
+                                                }
+                                            }
+                                        }
+                                    });
+                                    $A.enqueueAction(action2);
+                                    /**$A.get('e.force:refreshView').fire();
+                        var navEvt = $A.get("e.force:navigateToSObject");
+                        navEvt.setParams({
+                            "recordId": respuesta.Id,
+                            "slideDevName": "detail",
+                            "isredirect" :true
+                        });
+                        navEvt.fire(); */
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (state === "ERROR"){
+                var errors = response.getError();
+                if (errors) {
+                    if (errors[0] && errors[0].message) {
+                        console.log("Error message: " +
+                        errors[0].message);
+                    } else {
+                        console.log("Unknown error");
+                    }
+                }
+            }
+            if(!isCalledFromOrder){
+                //$A.get('e.force:refreshView').fire();
+                setTimeout(function () {
+                    component.set("v.showSpinner",false);
+                    var navEvt = $A.get("e.force:navigateToSObject");
+                    navEvt.setParams({
+                        "recordId": DireccionId,
+                        "slideDevName": "detail",
+                        "isredirect" :true
+                    });
+                    navEvt.fire();
+                }, 1000);
+            }
+        });
+        $A.enqueueAction(action);
+    },
     showToastMessage : function(mssg, mode, type, title, event) {
         var toastEvent = $A.get("e.force:showToast");
         toastEvent.setParams({
