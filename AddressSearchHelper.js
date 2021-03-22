@@ -9,9 +9,12 @@
         var id = component.get("v.recordId");
         var action = component.get("c.saveAddressDetailsbyId");
         var addressDetails = component.get("v.addressDetails");
+        var Tipo = component.get("v.TipoSelected");
         console.log('id is ' + id);
         if(!addressDetails.Name){
             component.set("v.errorMesage", "Se debe ingresar como mínimo un dato en en campo 'Calle' para guardar la dirección");
+        } else if(!Tipo){
+            component.set("v.errorMesage", "Debe seleccionar un tipo de cobertura para poder obtener la misma");
         }else{
             var cuenta = component.get("v.cuenta");
             console.log('cuenta is ' + cuenta);
@@ -34,6 +37,7 @@
                 if (state == 'SUCCESS') {
                     var respuesta = response.getReturnValue();
                     this.showToastMessage('¡Se ha creado la dirección de manera exitosa!', 'dismissible','success','Success!',event );
+                    this.showToastMessage('Buscando cobertura en la dirección', 'dismissible','success','Buscando cobertura',event );
                     var isCalledFromOrder = component.get("v.isCalledFromOrder");
                     if(isCalledFromOrder){
                         var compEvent = component.getEvent("send_Addres_Details");
@@ -44,7 +48,7 @@
                     }else{
                         
                     }
-                    this.getAddressByGPS(component,event,respuesta.Id);
+                    this.getAddressByGPS(component,event,respuesta.Id, respuesta);
                 }else if (state === "INCOMPLETE") {
                     // do something
                 }
@@ -244,11 +248,12 @@
         });
         $A.enqueueAction(action);
     },
-    getAddressByGPS : function(component, event, DireccionId){
+    getAddressByGPS : function(component, event, DireccionId, objRespuesta){
         console.log('getAddressByGPS');
         component.set("v.showSpinner",true);
-        var direccion = component.get("v.direccionActualizable");
+        var direccion = objRespuesta;//component.get("v.addressDetails");
         var action = component.get("c.ObtieneFrecuencias");
+        var Tipo = component.get("v.TipoSelected");
         console.log('asignó dirección y action');
         console.log('id dirección: ' + DireccionId);
         action.setParams({ idDireccion : DireccionId });
@@ -259,71 +264,99 @@
             var state = response.getState();
             console.log('estado: ' + state);
             if (state === "SUCCESS"){
-                var obj = response.getReturnValue();
+                var objres = response.getReturnValue();
+                var obj = JSON.parse(objres);
                 console.log(obj);
                 if(obj){
+                    console.log('1');
                     component.set("v.responseData",obj);
                     if(obj.coverage){
+                        console.log('2');
                         if(obj.coverage.coverage === 'true'){
+                            direccion.Cobertura__c = true;
+                            component.set("v.direccionActualizable",direccion);
+                            component.set("v.isActive",false);
+                            var action2 = component.get("c.saveAddressRecord");
+                            action2.setParams({direccion : direccion});
+                            action2.setCallback(this, function(response){
+                                var state2 = response.getState();
+                                if(state === 'SUCCESS'){
+                                    console.log('exitoso');
+                                    this.showToastMessage('¡La dirección cuenta con cobertura! Consulte los detalles de la cuenta', 'dismissible','success','Success!',event );
+                                } else if (state === "ERROR"){
+                                    var errors = response.getError();
+                                    if (errors) {
+                                        if (errors[0] && errors[0].message) {
+                                            console.log("Error message: " +
+                                            errors[0].message);
+                                        } else {
+                                            console.log("Unknown error");
+                                        }
+                                    }
+                                }
+                            });
+                            $A.enqueueAction(action2);
+                            /*console.log('3');
                             if(obj.customer_delivery_data){
-                                var item = obj.customer_delivery_data.find(item => item.delivery_type == value);
-                                var direccion = component.get("v.direccionActualizable");
-                                direccion.Cobertura__c = true;
-                                direccion.tipoCobertura__c = item.coverage_type;
-                                direccion.codigoZona__c = item.zone_code;
-                                direccion.codigoDistribuidora__c = item.distributor_code;
-                                direccion.codigoRuta__c = item.route_code;
-                                direccion.tipoEntrega__c = item.delivery_type;
-                                if(item.frequency){
-                                    if(item.frequency.delivery_monday == "1"){
-                                        direccion.Lunes__c = true;
-                                    }
-                                    if(item.frequency.delivery_tuesday == "1"){
-                                        direccion.Martes__c = true;
-                                    }
-                                    if(item.frequency.delivery_wednesday == "1"){
-                                        direccion.Miercoles__c = true;
-                                    }
-                                    if(item.frequency.delivery_thursday == "1"){
-                                        direccion.Jueves__c = true;
-                                    }
-                                    if(item.frequency.delivery_friday == "1"){
-                                        direccion.Viernes__c = true;
-                                    }
-                                    if(item.frequency.delivery_saturday == "1"){
-                                        direccion.Sabado__c = true;
-                                    }
-                                    component.set("v.direccionActualizable",direccion);
-                                    component.set("v.isActive",false);
-                                    var action2 = component.get("c.saveAddressRecord");
-                                    action2.setParams({direccion : direccion});
-                                    action2.setCallback(this, function(response){
-                                        var state2 = response.getState();
-                                        if(state === 'SUCCESS'){
-                                            console.log('exitoso');
-                                        } else if (state === "ERROR"){
-                                            var errors = response.getError();
-                                            if (errors) {
-                                                if (errors[0] && errors[0].message) {
-                                                    console.log("Error message: " +
-                                                    errors[0].message);
-                                                } else {
-                                                    console.log("Unknown error");
+                                console.log('4');
+                                if(obj.customer_delivery_data.find(item => item.delivery_type == Tipo)){
+                                    var item = obj.customer_delivery_data.find(item => item.delivery_type == Tipo);
+                                    //var direccion = component.get("v.addressDetails");
+                                    direccion.Cobertura__c = true;
+                                    direccion.tipoCobertura__c = item.coverage_type;
+                                    direccion.codigoZona__c = item.zone_code;
+                                    direccion.codigoDistribuidora__c = item.distributor_code;
+                                    direccion.codigoRuta__c = item.route_code;
+                                    direccion.tipoEntrega__c = item.delivery_type;
+                                    if(item.frequency){
+                                        console.log('5');
+                                        if(item.frequency.delivery_monday == "1"){
+                                            direccion.Lunes__c = true;
+                                        }
+                                        if(item.frequency.delivery_tuesday == "1"){
+                                            direccion.Martes__c = true;
+                                        }
+                                        if(item.frequency.delivery_wednesday == "1"){
+                                            direccion.Miercoles__c = true;
+                                        }
+                                        if(item.frequency.delivery_thursday == "1"){
+                                            direccion.Jueves__c = true;
+                                        }
+                                        if(item.frequency.delivery_friday == "1"){
+                                            direccion.Viernes__c = true;
+                                        }
+                                        if(item.frequency.delivery_saturday == "1"){
+                                            direccion.Sabado__c = true;
+                                        }
+                                        component.set("v.direccionActualizable",direccion);
+                                        component.set("v.isActive",false);
+                                        var action2 = component.get("c.saveAddressRecord");
+                                        action2.setParams({direccion : direccion});
+                                        action2.setCallback(this, function(response){
+                                            var state2 = response.getState();
+                                            if(state === 'SUCCESS'){
+                                                console.log('exitoso');
+                                                this.showToastMessage('¡La dirección cuenta con cobertura! Consulte los detalles de la cuenta', 'dismissible','success','Success!',event );
+                                            } else if (state === "ERROR"){
+                                                var errors = response.getError();
+                                                if (errors) {
+                                                    if (errors[0] && errors[0].message) {
+                                                        console.log("Error message: " +
+                                                        errors[0].message);
+                                                    } else {
+                                                        console.log("Unknown error");
+                                                    }
                                                 }
                                             }
-                                        }
-                                    });
-                                    $A.enqueueAction(action2);
-                                    /**$A.get('e.force:refreshView').fire();
-                        var navEvt = $A.get("e.force:navigateToSObject");
-                        navEvt.setParams({
-                            "recordId": respuesta.Id,
-                            "slideDevName": "detail",
-                            "isredirect" :true
-                        });
-                        navEvt.fire(); */
+                                        });
+                                        $A.enqueueAction(action2);
+                                    }
+                                } else {
+                                    this.showToastMessage('El tipo de cobertura no aplica para esta dirección', 'dismissible','error','Error al obtener cobertura',event );
                                 }
-                            }
+                            }*/
+                        } else {
+                            this.showToastMessage('No se cuenta con cobertura para la dirección ingresada', 'dismissible','error','Error al obtener cobertura',event );
                         }
                     }
                 }
