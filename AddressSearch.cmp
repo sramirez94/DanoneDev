@@ -102,6 +102,11 @@
                 <lightning:layoutItem size="6" padding="around-small">
                     <lightning:input name="longitud" label="Entre Calle 2" value="{!v.addressDetails.entreCalle2__c}" />
                 </lightning:layoutItem>
+
+                <!--<lightning:layoutItem size="5" padding="around-small">
+                    <lightning:input name="longitud" label="Tipo de entrega" value="{!v.addressDetails.tipoEntrega__c}" />
+                </lightning:layoutItem>-->
+
                 <lightning:layoutItem size="12" padding="around-small">
                     <lightning:map mapMarkers="{! v.mapMarkers }" zoomLevel="{!v.zoomLevel}" />
                 </lightning:layoutItem>
