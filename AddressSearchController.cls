@@ -284,45 +284,56 @@ public class AddressSearchController {
         return direccion.Id;
     }
     @auraEnabled
-    public static String ObtieneFrecuencias(Decimal strLatitud, Decimal strLongitud){
+    public static String ObtieneFrecuencias(Id idDireccion){
         //Boolean result = false;
+        System.debug('ObtieneFrecuencias');
         try{
-            System.debug('latitud: ' + strLatitud);
-            System.debug('longitud: ' + strLongitud);
-            HttpRequest request = new HttpRequest();
-            Http http = new Http();
-            request.setEndpoint(Label.Endpoint_By_GPS);
-            request.setMethod('POST');
-            request.setHeader('Content-Type', 'application/json');
-            request.setHeader('client_secret', Label.Client_Secret);
-            request.setHeader('client_id', Label.Client_Id);
-            
-            JSONGenerator gen=JSON.createGenerator(true);
-            gen.writeStartObject();      
-            gen.writeStringField('latitude', String.valueOf(strLatitud));
-            gen.writeStringField('longitude', String.valueOf(strLongitud));
-            //gen.writeStringField('chanel', String.valueOf(d.Canal__c));
-            gen.writeEndObject();    
-            String jsonS = gen.getAsString();
-            
-            System.debug('json:' + jsonS);
-            
-            request.setBody(jsonS);
-            
-            HttpResponse response = http.send(request);
-            
-            if (response.getStatusCode() != 200) {
-                result = false;
-                throw new AuraHandledException('Error al obtener los datos de cobertura ' + response.getStatusCode() + ' ' + response.getStatus());
-            } else {
-                JSON2Apex m = JSON2Apex.parse(response.getBody());
-                System.debug('respuesta frec: ' + m);
-                result = true;
+            Direccion__c d = [Select Id, Longitud__c,ubicacion__Latitude__s,ubicacion__Longitude__s, Latitud__c,Canal__c From Direccion__c Where ID=:idDireccion];
+            if(d.ubicacion__Latitude__s == null || d.ubicacion__Longitude__s == null){
+                throw new AuraHandledException('La dirección no contiene información suficiente, favor de revisar la latitud y longitud de la misma');
+            }else{
+                System.debug('1');
+                HttpRequest request = new HttpRequest();
+                Http http = new Http();
+                System.debug('2');
+                request.setEndpoint(Label.Endpoint_By_GPS);
+                request.setMethod('POST');
+                request.setHeader('Content-Type', 'application/json');
+                request.setHeader('client_secret', Label.Client_Secret);
+                request.setHeader('client_id', Label.Client_Id);
+                System.debug('3');
+                JSONGenerator gen=JSON.createGenerator(true);
+                gen.writeStartObject();      
+                gen.writeStringField('latitude', String.valueOf(d.ubicacion__Latitude__s));
+                gen.writeStringField('longitude', String.valueOf(d.ubicacion__Longitude__s));
+                System.debug('4');
+                //gen.writeStringField('chanel', String.valueOf(d.Canal__c));
+                gen.writeEndObject();    
+                String jsonS = gen.getAsString();
+                System.debug('5');
+                System.debug('json:' + jsonS);
+                request.setBody(jsonS);
+                System.debug('6');
+                HttpResponse response = http.send(request);
+                System.debug('7');
+                if (response.getStatusCode() != 200) {
+                    //result = false;
+                    throw new AuraHandledException('Error al obtener los datos de cobertura ' + response.getStatusCode() + ' ' + response.getStatus());
+                } else {
+                    /*JSON2Apex m = JSON2Apex.parse(response.getBody());
+                    System.debug('respuesta frec: ' + m);
+                    result = true;*/
+                    System.debug('body: ' + response.getBody());
+                }
+                System.debug('8');
+                //return result;
+                return response.getBody();
+                //return 'Proceso final';
             }
-            return result;
         }catch (Exception ex){
             System.debug('ObtieneFrecuencias: ' +ex.getMessage()+' '+ex.getLineNumber());
-            return false;
+            throw new AuraHandledException('ObtieneFrecuencias: ' +ex.getMessage()+' '+ex.getLineNumber());
+            
         }
     }
     public class fromJSON{
