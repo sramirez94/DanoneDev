@@ -13,8 +13,8 @@
         console.log('id is ' + id);
         if(!addressDetails.Name){
             component.set("v.errorMesage", "Se debe ingresar como mínimo un dato en en campo 'Calle' para guardar la dirección");
-        } else if(!Tipo){
-            component.set("v.errorMesage", "Debe seleccionar un tipo de cobertura para poder obtener la misma");
+        /*} else if(!Tipo){
+            component.set("v.errorMesage", "Debe seleccionar un tipo de cobertura para poder obtener la misma");*/
         }else{
             var cuenta = component.get("v.cuenta");
             console.log('cuenta is ' + cuenta);
