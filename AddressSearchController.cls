@@ -22,9 +22,6 @@ public class AddressSearchController {
     //Method to save address details on click on Save button
     @AuraEnabled
     public static Direccion__c saveAddressDetailsbyId(String id, Direccion__c addDetails){
-        system.debug('saveAddressDetailsbyId method');
-        system.debug('addDetails ' + addDetails);
-        system.debug('id '+ id);
         /*Decimal decLatitud = addDetails.ubicacion__Latitude__s;
         Decimal decLongitud = addDetails.ubicacion__Longitude__s;*/
         Direccion__c d = new Direccion__c();
@@ -65,8 +62,12 @@ public class AddressSearchController {
         System.debug('json:' + jsonS);
        
         request.setBody(jsonS);
-        HttpResponse response = http.send(request);
+        /*if(d.Pais__c == 'Mexico') d.Pais__c='MXN';//Borrar cuando vuelva a funcionar el ws
+        insert d;//Borrar cuando vuelva a funcionar el ws
+        return d; //Borrar cuando vuelva a funcionar el ws*/
         
+        //Descomentar todo el bloque de código cuando vuelva a funcionar el ws
+        HttpResponse response = http.send(request);
         if (response.getStatusCode() != 200) {
             System.debug('The status code returned was not expected: ' +
                 response.getStatusCode() + ' ' + response.getStatus());
@@ -288,6 +289,7 @@ public class AddressSearchController {
         //Boolean result = false;
         System.debug('ObtieneFrecuencias');
         try{
+            //Descomentar cuando vuelva a funcionar el ws
             Direccion__c d = [Select Id, Longitud__c,ubicacion__Latitude__s,ubicacion__Longitude__s, Latitud__c,Canal__c From Direccion__c Where ID=:idDireccion];
             if(d.ubicacion__Latitude__s == null || d.ubicacion__Longitude__s == null){
                 throw new AuraHandledException('La dirección no contiene información suficiente, favor de revisar la latitud y longitud de la misma');
@@ -317,18 +319,11 @@ public class AddressSearchController {
                 HttpResponse response = http.send(request);
                 System.debug('7');
                 if (response.getStatusCode() != 200) {
-                    //result = false;
                     throw new AuraHandledException('Error al obtener los datos de cobertura ' + response.getStatusCode() + ' ' + response.getStatus());
                 } else {
-                    /*JSON2Apex m = JSON2Apex.parse(response.getBody());
-                    System.debug('respuesta frec: ' + m);
-                    result = true;*/
                     System.debug('body: ' + response.getBody());
                 }
-                System.debug('8');
-                //return result;
                 return response.getBody();
-                //return 'Proceso final';
             }
         }catch (Exception ex){
             System.debug('ObtieneFrecuencias: ' +ex.getMessage()+' '+ex.getLineNumber());
@@ -336,6 +331,30 @@ public class AddressSearchController {
             
         }
     }
+    /*@AuraEnabled
+    public static Map<String,String> RetornaOpciones(){
+        try {
+            System.debug('RetornaOpciones');
+            Map<String,String>ListaOpc = New Map<String,String>();
+            ListaOpc = ObtieneOpciones('Direccion__c','tipoEntrega__c');
+            return ListaOpc;
+        } catch (Exception e) {
+            throw new AuraHandledException('RetornaOpciones ' + e.getMessage());
+        }
+    }
+    public static Map<String,String> ObtieneOpciones(String SObjectT,String fieldN){
+        Map<String,String>ListaSO = New Map<String,String>();
+        Schema.SObjectType s = Schema.getGlobalDescribe().get(SObjectT);
+        Schema.DescribeSObjectResult r = s.getDescribe() ;
+        Map<String,Schema.SObjectField> fields = r.fields.getMap() ;
+        Schema.DescribeFieldResult fieldResult = fields.get(fieldN).getDescribe();
+        List<Schema.PicklistEntry> ple = fieldResult.getPicklistValues();
+        for( Schema.PicklistEntry f : ple)
+        {
+            ListaSO.put(f.getLabel(),f.getValue());
+        }
+        return ListaSO;
+    }*/
     public class fromJSON{
         public cls_error_list[] error_list;
         public cls_geocoding geocoding;
