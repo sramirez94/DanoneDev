@@ -24,7 +24,11 @@
     <aura:attribute name="errorMesage" type="string"/>
     <aura:attribute name="responseData" type="Object"/>
     <aura:attribute name="direccionActualizable" type="Direccion__c"/>
+
+    <!--<aura:attribute name="TipoSelected" type="String"/>
+    <aura:attribute name="TipoMap" type="Map"/>-->
     <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <!--<aura:handler name="init" value="{!this}" action="{!c.loadOptionsTipo}" />-->
     <aura:registerEvent name="Close_Modal_Address" type="c:Close_Modal_Address"/>
     <aura:registerEvent name="send_Addres_Details" type="c:Send_Address_Details_Event"/>
 
@@ -102,6 +106,7 @@
                 <lightning:layoutItem size="6" padding="around-small">
                     <lightning:input name="longitud" label="Entre Calle 2" value="{!v.addressDetails.entreCalle2__c}" />
                 </lightning:layoutItem>
+
 
                 <!--<lightning:layoutItem size="5" padding="around-small">
                     <lightning:input name="longitud" label="Tipo de entrega" value="{!v.addressDetails.tipoEntrega__c}" />
